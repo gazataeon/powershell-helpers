@@ -1,3 +1,8 @@
+# Change the values below to suite
+# This script is designed to copy azure managed images from one region to another.
+# 
+
+
 
 $uniqueDomainName = "<POPULATE THIS>"
 $location = "<POPULATE THIS>"
