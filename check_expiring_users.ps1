@@ -1,12 +1,15 @@
 #Populate all users in domain
 $users = Get-ADUser -LDAPFilter '(&(!userAccountControl:1.2.840.113556.1.4.803:=2)(!userAccountControl:1.2.840.113556.1.4.803:=65536))'`
-–Properties "Name", "SamAccountName","EmailAddress","msDS-UserPasswordExpiryTimeComputed" |
-Select-Object -Property  "Name", "SamAccountName","EmailAddress", @{Name="Password_Expiry_Date";`
+–Properties "Name", "SamAccountName","EmailAddress","msDS-UserPasswordExpiryTimeComputed", "enabled" , "AccountExpirationDate" | `
+Select-Object -Property  "Name", "SamAccountName","EmailAddress", "AccountExpirationDate", "enabled", @{Name="Password_Expiry_Date";`
 Expression={[datetime]::FromFileTime($_."msDS-UserPasswordExpiryTimeComputed")}} 
 
-#alert on accounts expiring within 14 days
+#alert on accounts expiring within 7 days
 $date = Get-Date
-$dateadd = $date.adddays(14) -as [datetime]
+$dateadd = $date.adddays(7) -as [datetime]
+
+# filter users to Enabled accounts that have already not expired but are due to expire within the next 7 days
+$users = $users | Where-Object {($_.enabled -eq "true") -and ($_.Password_Expiry_Date -lt $dateadd) -and ($_.AccountExpirationDate -eq $null) -and ($_.Password_Expiry_Date -gt $date)}
 
 #SMTP Details
 $SMTPServer = "<MAIL SERVER HERE>"
@@ -29,7 +32,7 @@ $smtp.Credentials = New-Object System.Net.NetworkCredential($Username, $Password
 #Check each user to see if they expire in the next 14 days, if true then mail them, if they dont have email address set up mail the infra team
 foreach ($user in $users)
 {
-    if ($user.Password_Expiry_Date -lt $dateadd)
+     if (($user.Password_Expiry_Date -lt $dateadd) -and ($user.enabled -eq "true") -and ($user.AccountExpirationDate -eq $null) -and ($user.Password_Expiry_Date -gt $date) )
     {
     Write-Output "Hi $($user.name) your account is due to expire on $($user.Password_Expiry_Date)"
  
