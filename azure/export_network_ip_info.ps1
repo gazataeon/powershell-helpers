@@ -5,7 +5,7 @@
 ### Variables 
 $azureRegion = "westeurope"
 $exportLocation = "c:\temp\azureExports"
-$logfileName = "$($azureRegion)_networkinfo.txt"
+$logfileName = "$($azureRegion)_networkinfo.csv"
 ### Body
 
 # Create logdir
