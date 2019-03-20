@@ -5,20 +5,26 @@
 ### Variables 
 $azureRegion = "westeurope"
 $exportLocation = "c:\temp\azureExports"
-$logfileName = "$($azureRegion)_networkinfo.csv"
+$logfileName = "ipinfo_$($azureRegion)_"
+$logExt = ".csv"
 ### Body
 
 # Create logdir
 if ((Test-Path -Path $exportLocation) -eq $false)
 {
     New-Item -Path $exportLocation -ItemType Directory
+    New-Item -Path "$($exportLocation)\archives" -ItemType Directory
 }
 
 # Archive any old logs
-if ((Test-Path -Path "$($exportLocation)\$($logfileName)") -eq $true)
+if ((Test-Path -Path "$($exportLocation)\*.*") -eq $true)
 {
-    compress-archive -path "$($exportLocation)\$($logfileName)" -destinationpath "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -compressionlevel optimal
-    Remove-Item "$($exportLocation)\$($logfileName)" -Force
+    #zip up all files here not already a zip
+    Move-Item -Path "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -Destination "$($exportLocation)\archives"
+    Get-ChildItem "$($exportLocation)" | Where-Object name -NotLike "*.zip*" | compress-archive -destinationpath "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -compressionlevel optimal 
+    Move-Item -Path "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -Destination "$($exportLocation)\archives"
+    #delete any non zipped files
+    Remove-Item "$($exportLocation)\*.*" 
 }
 
 
@@ -57,7 +63,7 @@ foreach ($vnet in $vnets)
                         write-host "error in check, will retry: $($_)"
                       }
                     }
-                write-output "$($objectname),NIC,$($nicAddress)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)" -Append
+                write-output "$($objectname),NIC,$($nicAddress)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
             }
             elseif((($ipconfig.id).split('/').item(7)) -eq "loadBalancers") #is a LB iP
             {
@@ -78,12 +84,12 @@ foreach ($vnet in $vnets)
                       }
                     }
 
-                write-output "$($lbName),$($lbInterfaceName),$($lbInterfaceIP)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)" -Append
+                write-output "$($lbName),$($lbInterfaceName),$($lbInterfaceIP)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
             }
             elseif((($ipconfig.id).split('/').item(7)) -eq "virtualNetworkGateways") #is a Virtual Network Gateway IP
             {
                 $vGatewayName = ($ipconfig.id).split('/').item(8)
-                write-output "$($vGatewayName),VirtualGateway,GatewaySubnet" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)" -Append
+                write-output "$($vGatewayName),VirtualGateway,GatewaySubnet" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
             }
             else # something else!
             {
