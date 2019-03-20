@@ -2,12 +2,34 @@
 ## AzureRM Script to run through all the used IPs in a region then output info on them
 ####################################################################################
 
-# Get all the vNets (change the location to whatever you want)
-$vnets = Get-AzureRmVirtualNetwork | Where-Object location -eq westeurope
+### Variables 
+$azureRegion = "westeurope"
+$exportLocation = "c:\temp\azureExports"
+$logfileName = "$($azureRegion)_networkinfo.txt"
+### Body
+
+# Create logdir
+if ((Test-Path -Path $exportLocation) -eq $false)
+{
+    New-Item -Path $exportLocation -ItemType Directory
+}
+
+# Archive any old logs
+if ((Test-Path -Path "$($exportLocation)\$($logfileName)") -eq $true)
+{
+    compress-archive -path "$($exportLocation)\$($logfileName)" -destinationpath "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -compressionlevel optimal
+    Remove-Item "$($exportLocation)\$($logfileName)" -Force
+}
+
+
+
+# Get all the vNets
+$vnets = Get-AzureRmVirtualNetwork | Where-Object location -eq $azureRegion
 
 # Go through each Vnet and checks the subnets and network devices
 foreach ($vnet in $vnets) 
 {
+   $currentVnet = $vnet.name
    # Get subnets in this vnet
    $subnets = $vnet | Get-AzureRmVirtualNetworkSubnetConfig
    foreach ($subnet in $subnets)
@@ -35,7 +57,7 @@ foreach ($vnet in $vnets)
                         write-host "error in check, will retry: $($_)"
                       }
                     }
-                write-host $objectname "NIC" $nicAddress
+                write-output "$($objectname),NIC,$($nicAddress)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)" -Append
             }
             elseif((($ipconfig.id).split('/').item(7)) -eq "loadBalancers") #is a LB iP
             {
@@ -56,11 +78,12 @@ foreach ($vnet in $vnets)
                       }
                     }
 
-                write-host $lbName $lbInterfaceName $lbInterfaceIP
+                write-output "$($lbName),$($lbInterfaceName),$($lbInterfaceIP)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)" -Append
             }
             elseif((($ipconfig.id).split('/').item(7)) -eq "virtualNetworkGateways") #is a Virtual Network Gateway IP
             {
-                write-host ($ipconfig.id).split('/').item(8) "VirtualGateway" "GatewaySubnet"
+                $vGatewayName = ($ipconfig.id).split('/').item(8)
+                write-output "$($vGatewayName),VirtualGateway,GatewaySubnet" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)" -Append
             }
             else # something else!
             {
@@ -71,5 +94,3 @@ foreach ($vnet in $vnets)
    }
 
 }
-
-
