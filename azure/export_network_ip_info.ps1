@@ -20,9 +20,9 @@ if ((Test-Path -Path $exportLocation) -eq $false)
 if ((Test-Path -Path "$($exportLocation)\*.*") -eq $true)
 {
     #zip up all files here not already a zip
-    Move-Item -Path "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -Destination "$($exportLocation)\archives"
+    Move-Item -Path "*.zip" -Destination "$($exportLocation)\archives"
     Get-ChildItem "$($exportLocation)" | Where-Object name -NotLike "*.zip*" | compress-archive -destinationpath "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -compressionlevel optimal 
-    Move-Item -Path "$($exportLocation)\$($logfileName)_$((get-date).ToString("yyyyMMdd")).zip" -Destination "$($exportLocation)\archives"
+    Move-Item -Path "*.zip" -Destination "$($exportLocation)\archives"
     #delete any non zipped files
     Remove-Item "$($exportLocation)\*.*" 
 }
@@ -40,14 +40,15 @@ foreach ($vnet in $vnets)
    $subnets = $vnet | Get-AzureRmVirtualNetworkSubnetConfig
    foreach ($subnet in $subnets)
    {
+        $currentSubnet = $subnet.Name
         # Get anything with an IP config
         $ipconfigs = $subnet.IpConfigurations
         foreach ($ipconfig in $ipconfigs)
         {
             # Break down device type
-            if ((($ipconfig.id).split('/')).item(7) -eq "networkInterfaces" ) #is a VM
+            if ((($ipconfig.id).split('/')).item(7) -eq "networkInterfaces" ) #Device is a VM
             {
-                # Get Object IP
+                # Get Object IP (in this case the nic name itself)
                 $objectname = ($ipconfig.id).split('/').item(8)
 
                 # Catch while loop in case of timeout to get IP from object
@@ -55,7 +56,20 @@ foreach ($vnet in $vnets)
                     while (-not $worked) {
                       try {
                         # Perform command 
-                        $nicAddress = (Get-AzureRmNetworkInterface -ErrorAction Stop -ResourceGroupName (($ipconfig.id).split('/').item(4)) -Name ($ipconfig.id).split('/').item(8)).IpConfigurations.PrivateIpAddress
+                        #$nicAddress = (Get-AzureRmNetworkInterface -ErrorAction Stop -ResourceGroupName (($ipconfig.id).split('/').item(4)) -Name ($ipconfig.id).split('/').item(8)).IpConfigurations.PrivateIpAddress
+                        $nic = (Get-AzureRmNetworkInterface -ErrorAction Stop -ResourceGroupName (($ipconfig.id).split('/').item(4)) -Name ($ipconfig.id).split('/').item(8))
+                        $nicAddress = $nic.IpConfigurations.PrivateIpAddress
+                        #check to see if Nic is actually attached to a vm
+                        if ($nic.VirtualMachine -ne $null)
+                        {
+                            $nicsVM = ($nic.VirtualMachine.Id).Split('/') | select-object -Last 1
+                        }
+                        else
+                        {
+                            $nicsVM = "UNATTACHED_NIC-$($objectname)"
+                        }
+                        
+
 
                         $worked = $true  # Will be skipped if the above fails
                       } catch {
@@ -63,7 +77,7 @@ foreach ($vnet in $vnets)
                         write-host "error in check, will retry: $($_)"
                       }
                     }
-                write-output "$($objectname),NIC,$($nicAddress)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
+                write-output "$($nicsVM),NIC,$($nicAddress),$($currentSubnet)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
             }
             elseif((($ipconfig.id).split('/').item(7)) -eq "loadBalancers") #is a LB iP
             {
@@ -84,12 +98,12 @@ foreach ($vnet in $vnets)
                       }
                     }
 
-                write-output "$($lbName),$($lbInterfaceName),$($lbInterfaceIP)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
+                write-output "$($lbName),$($lbInterfaceName),$($lbInterfaceIP),$($currentSubnet)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
             }
             elseif((($ipconfig.id).split('/').item(7)) -eq "virtualNetworkGateways") #is a Virtual Network Gateway IP
             {
                 $vGatewayName = ($ipconfig.id).split('/').item(8)
-                write-output "$($vGatewayName),VirtualGateway,GatewaySubnet" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
+                write-output "$($vGatewayName),VirtualGateway,GatewaySubnet,$($currentSubnet)" | Tee-Object -FilePath "$($exportLocation)\$($logfileName)-$($currentVnet)$($logExt)" -Append
             }
             else # something else!
             {
