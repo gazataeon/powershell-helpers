@@ -1,8 +1,14 @@
+############################
+# Script to Create a Self signed Cert to be used for a new service principle authentication
+# 
+############################
+
+
 
 #Creates a self signed cert for 3 years
 
 $certName = Read-Host -Prompt "enter cert name"
-$spName = Read-Host -Prompt "enter cert name"
+$spName = Read-Host -Prompt "enter service principle name"
 
 $cert = New-SelfSignedCertificate -CertStoreLocation "cert:\CurrentUser\My" `
   -Subject "CN=$($certName)" `
