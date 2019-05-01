@@ -1,7 +1,16 @@
 # Awesome Logging Module
 
 ## Features
+### - Working
 Pass a date( or not!) and get back a filename friendly string, handy for log files and the like!
+
+### - Planned
+Log your output to multiple destinations with one call.
+* Console
+* Local Logfile
+* Slack
+* Post
+* Morse Code (This is a joke....for now)
 
 ## Acceptable date input formats
 * `01/01/90` or `01/01/1990` string
