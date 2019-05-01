@@ -37,5 +37,8 @@ Describe "invoke-hotdate" {
     It "Succeed with input date of '10 10 2001'" {
         invoke-hotdate -mydate "10 10 2001" | Should match "\d{8}_\d{6}"
     }
+    It "Succeed with input date 'DateTime' object" {
+        invoke-hotdate -mydate (get-date) | Should match "\d{8}_\d{6}"
+    }
 
 }
