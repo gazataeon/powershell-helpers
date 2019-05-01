@@ -1,5 +1,5 @@
 # Returns a date that is handy for filenames or anything that doesnt like weird chars. Pass it nothing and you get the current date.
-function invoke-hotDate($date,$format)
+function invoke-hotDate($myDate,$format)
 {
 
     # Check Format
@@ -12,36 +12,35 @@ function invoke-hotDate($date,$format)
     }
 
     # Validate date
-    if($date)
+    if($myDate)
     {
         #write-output "date has been passed"
-        if ($date.GetType().name -eq "String") # User has not passed a DateTime Object
+        if ($myDate.GetType().name -eq "String") # User has not passed a DateTime Object
         {
-        #write-output "date passed is a string: $($date.GetType().name)"
+        #write-output "date passed is a string: $($myDate.GetType().name)"
         try {
-                if($date -match "^\d\d\d\d\d\d$") # Matches ddMMyy
+                switch -Regex ($myDate) 
                 {
-                    #write-output "date Matches ddMMyy"
-                    $date = [DateTime]::ParseExact($date, "ddMMyy", $null).ToString($dateformat)
-                    return $date
+                    "^\d\d\d\d\d\d$" { $parseFormat = "ddMMyy" } # Matches ddMMyy
+                    "^\d\d\d\d\d\d\d\d$" { $parseFormat = "ddMMyyyy" } # Matches ddMMyyyy
+                    "^\d\d-\d\d-\d\d$" { $parseFormat = "dd-MM-yy" } # Matches dd-MM-yy
+                    "^\d\d-\d\d-\d\d\d\d$" { $parseFormat = "dd-MM-yyyy" } # Matches dd-MM-yyyy
+                    "^\d\d/\d\d/\d\d$" { $parseFormat = "dd/MM/yy" } # Matches dd/MM/yy
+                    "^\d\d/\d\d/\d\d\d\d$" { $parseFormat = "dd/MM/yyyy" } # Matches dd/MM/yyyy
+                    Default {$parseFormat = "fullString"}
                 }
-                elseif($date -match "^\d\d-\d\d-\d\d$") # Matches dd-MM-yy
+                
+                if($parseFormat -eq "fullString")
                 {
-                    #write-output "date Matches dd-MM-yy"
-                    $date = [DateTime]::ParseExact($date, "dd-MM-yy", $null).ToString($dateformat)
-                    return $date
-                }
-                elseif($date -match "^\d\d/\d\d/\d\d$") # Matches dd/MM/yy
-                {
-                    #write-output "date Matches dd/MM/yy"
-                    $date = [DateTime]::ParseExact($date, "dd/MM/yy", $null).ToString($dateformat)
-                    return $date
+                    #write-output "date passed is in full date string format"
+                    $myDate = (([dateTime]$myDate)).ToString($dateformat)
+                    return $myDate
                 }
                 else 
                 {
-                    #write-output "date passed is in full date string format"
-                    $date = (([dateTime]$date)).ToString($dateformat)
-                    return $date
+                    # Hopefully matches the regex above
+                    $myDate = [DateTime]::ParseExact($myDate, $parseFormat, $null).ToString($dateformat)
+                    return $myDate
                 }
                 
             }
@@ -49,13 +48,13 @@ function invoke-hotDate($date,$format)
                 Write-Error "Must pass date in a format that is parsable, see README" 
             }
         }
-        elseif ($date.GetType().name -eq "DateTime") # dateTime Object passed
+        elseif ($myDate.GetType().name -eq "DateTime") # dateTime Object passed
         {
             #write-output "date passed is a DateTime Object"
-            return (($date)).ToString($dateformat)
+            return (($myDate)).ToString($dateformat)
         }
     }
-    elseif ($date -eq $null) # No Date Passed, use today's date
+    elseif ($myDate -eq $null) # No Date Passed, use today's date
     {
         #"No date passed, will use current"
         return ((get-date)).ToString($dateformat)

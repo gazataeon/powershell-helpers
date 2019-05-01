@@ -31,14 +31,14 @@ Default is: "ddMMyyyy_hhmmss"
 
 ### Full text String date in format d
 
-`invoke-hotDate -format d -date "20 February 2017 10:48:26"`
+`invoke-hotDate -format d -mydate "20 February 2017 10:48:26"`
 ```
 20022017
 ```
 
 ### Full text String date with no format specified 
 
-`invoke-hotDate -date "20 February 2017 10:48:26"`
+`invoke-hotDate -mydate "20 February 2017 10:48:26"`
 ```
 20022017_104826
 ```
