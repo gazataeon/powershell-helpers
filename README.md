@@ -2,8 +2,8 @@
 
 Hello there.
 
-This is my collection of powershell scripts that I use now and then which are not specific to any particular environment or company I'm working in!
-Unfortunatley most of the scripts I work on are in private repos, but I'm trying to remove anything senstitive and stick them in here.
+This is my collection of powershell scripts that I use now and which are not specific to any particular environment or company I'm working in!
+Unfortunately most of the scripts I work on are in private repos, but I'm trying to remove anything sensitive and deposit them here.
 
 Check the readme under each directory for more script instructions.
 
