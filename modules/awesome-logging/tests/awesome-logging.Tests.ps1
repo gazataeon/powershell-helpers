@@ -32,10 +32,10 @@ Describe "invoke-hotdate" {
         invoke-hotdate -mydate "01 January 1990" | Should match "\d{8}_\d{6}"
     }
     It "Fail with input date of 'Tomorrow'" {
-        invoke-hotdate -mydate "Tomorrow" | Should Throw 
+        {invoke-hotdate -mydate "Tomorrow"} | Should throw 
     }
-    It "Fail with input date of '10 10 2001'" {
-        invoke-hotdate -mydate "10 10 2001" | Should Throw 
+    It "Succeed with input date of '10 10 2001'" {
+        invoke-hotdate -mydate "10 10 2001" | Should match "\d{8}_\d{6}"
     }
-    
+
 }

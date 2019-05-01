@@ -45,7 +45,7 @@ function invoke-hotDate($myDate,$format)
                 
             }
             catch {
-                Write-Error "Must pass date in a format that is parsable, see README" 
+                Throw "Must pass date in a format that is parsable, see README" 
             }
         }
         elseif ($myDate.GetType().name -eq "DateTime") # dateTime Object passed
@@ -61,6 +61,6 @@ function invoke-hotDate($myDate,$format)
     }
     else 
     {
-        Write-Error "Must pass date in a format that is parsable, see README"
+        Throw "Must pass date in a format that is parsable, see README"
     }
 }
