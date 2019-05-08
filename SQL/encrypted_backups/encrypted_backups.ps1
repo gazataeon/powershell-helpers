@@ -4,7 +4,7 @@
 ##
 
 # No Room for error here!
-$ErrorActionPreference = stop
+$ErrorActionPreference = "stop"
 
 # Import SQL Module 
 Install-Module -Name SqlServer #skips if already there
