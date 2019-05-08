@@ -8,7 +8,7 @@ $ErrorActionPreference = "stop"
 
 # Import SQL Module 
 Install-Module -Name SqlServer #skips if already there
-Import-Module "sqlps" -DisableNameChecking
+#Import-Module "sqlps" -DisableNameChecking
 
 write-host "About to request info." -ForegroundColor Yellow
 # Get Credentials
@@ -76,9 +76,21 @@ if ($secondaryServer)
         }
         # Copying Cert Backup to Secondary node
         write-host "Copying Cert Backup to Secondary node" -ForegroundColor Yellow
-        Copy-Item "\\$($targetServer)\c$\temp\certs\" -Destination "\\$($secondaryServer)\c$\temp\certs\"
+        Copy-Item "\\$($targetServer)\c$\temp\certs\" -Recurse -Destination "\\$($secondaryServer)\c$\temp\" -Force
+
+        # Check For Master Key on secondary server, if not, then restore this one
+        write-host "Checking for MS_DatabaseMasterKey" -ForegroundColor Yellow
+        $masterkeyCheck = Invoke-Sqlcmd -ServerInstance $targetServer -Query "SELECT * FROM master.sys.symmetric_keys `
+        where name = '##MS_DatabaseMasterKey##'"  -Database "master" 
+        if (!$masterkeyCheck)
+        {
+            Invoke-Sqlcmd -ServerInstance $secondaryServer -Query "drop master key"  -Database "master" 
+            Invoke-Sqlcmd -ServerInstance $secondaryServer -Query "create master key encryption by password = `'$($dbKeyPass)`'"  -Database "master" 
+            write-host "Created MS_DatabaseMasterKey" -ForegroundColor Green
+        }
 
         # "Restore" create Certifcate from backup (You do this on your other nodes)
+        Write-Host "Restoring cert to node 2" -ForegroundColor Yellow
         Invoke-Sqlcmd -ServerInstance $secondaryServer -Database "master" `
         -Query "CREATE CERTIFICATE AzureBackupCertificate `
         FROM FILE = 'c:\temp\certs\_AzureBackupCertificate.cer' `
