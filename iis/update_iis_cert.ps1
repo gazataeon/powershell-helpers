@@ -8,7 +8,7 @@ $newhash = "EBxxxxxxxxxxxxxxxxxxxxxx722" # this needs updating lol
 $pfxPass = "?????" # this too
 $pfxLocation = "c:\temp\certs\google.com.pfx" # check this ofc
 
-$bindings 
+$bindings = Get-WebBinding 
 
 $newcert = Get-ChildItem -Path Cert:\LocalMachine\My | where-Object {$_.Thumbprint -like $newhash} | Select-Object -ExpandProperty Thumbprint
 
